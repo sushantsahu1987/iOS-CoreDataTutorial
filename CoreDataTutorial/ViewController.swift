@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import CoreData
 
 class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
 
@@ -20,9 +21,28 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     
     var people:[String]? = [String]()
     
+    var peopleData:[NSManagedObject] = []
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         print("Core Data Tutorial")
+        
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
+            return
+        }
+        
+        let managedCtx = appDelegate.persistentContainer.viewContext
+        let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "Person")
+        
+        do {
+            let fetchResults = try managedCtx.fetch(fetchRequest)
+            print("fetch results \(fetchResults.count)")
+        
+            peopleData = fetchResults as! [NSManagedObject]
+            
+        } catch let error as NSError {
+            print("\(error)")
+        }
         
         submitedDataTable.dataSource = self
         submitedDataTable.delegate = self
@@ -33,18 +53,21 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "CellItem", for: indexPath)
-        cell.textLabel?.text = people?[indexPath.row]
+        
+        let person = peopleData[indexPath.row]
+        
+        let fname = person.value(forKeyPath: "fname") as! String
+        let lname = person.value(forKeyPath: "lname") as! String
+        
+        let name = "\(fname), \(lname)"
+        cell.textLabel?.text = name
     
         return cell
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
-        if let count = people?.count {
-            return count
-        }
-        
-        return 0
+        return peopleData.count
     }
     
     
@@ -65,6 +88,26 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         print("\(fname), \(lname)")
         let name = "\(fname), \(lname)"
         people?.append(name)
+        
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
+            return
+        }
+        
+        let managedCtx = appDelegate.persistentContainer.viewContext
+        
+        let entity = NSEntityDescription.entity(forEntityName: "Person", in: managedCtx)!
+        let person = NSManagedObject(entity: entity, insertInto: managedCtx)
+        
+        person.setValue(fname, forKeyPath: "fname")
+        person.setValue(lname, forKey: "lname")
+        
+        do {
+            try managedCtx.save()
+            peopleData.append(person)
+        } catch let error as NSError {
+          print("\(error), \(error.description)")
+        }
+        
         submitedDataTable.reloadData()
         
     }
