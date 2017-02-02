@@ -6,5 +6,5 @@ User enters values through the text field, which are then added to a table.
 
 
 
-====================================== In Progress =======================================================
+      =================== In Progress ====================
 
